@@ -13,7 +13,7 @@
 
     <MediaTemplate EmbedCab="yes" />
 
-    <StandardDirectory Id="ProgramFiles64Folder">
+    <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="OBSFolder" Name="obs-studio">
         <Directory Id="OBSPluginsFolder" Name="obs-plugins">
           <Directory Id="OBS64Folder" Name="64bit" />
@@ -34,7 +34,10 @@
 
     </Component>
 
-    <Feature Id="MainFeature" Title="Disque OBS" Level="1">
+    <Feature
+      Id="MainFeature"
+      Title="Disque OBS"
+      Level="1">
       <ComponentRef Id="DisqueDLL" />
     </Feature>
 
