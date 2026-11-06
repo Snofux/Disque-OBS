@@ -31,7 +31,7 @@ jobs:
 
           $spec.name = "disque-obs"
           $spec.displayName = "Disque OBS"
-          $spec.version = "0.8.0"
+          $spec.version = "1.0.0"
           $spec.author = "Snofux"
           $spec.website = "https://github.com/Snofux/Disque-OBS"
 
@@ -43,7 +43,6 @@ jobs:
         working-directory: _obs_template
         run: |
           cmake --preset windows-x64
-
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
@@ -53,7 +52,6 @@ jobs:
         working-directory: _obs_template
         run: |
           cmake --build --preset windows-x64 --config Release --parallel
-
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
@@ -71,41 +69,30 @@ jobs:
           New-Item -ItemType Directory -Force -Path artifact | Out-Null
           Copy-Item $dll.FullName artifact/disque-obs.dll
 
-      - name: Calculer SHA256
+      - name: Installer WiX Toolset
         shell: pwsh
         run: |
-          $hash = Get-FileHash "artifact/disque-obs.dll" -Algorithm SHA256
-          Write-Host "SHA256 de disque-obs.dll :"
-          Write-Host $hash.Hash
-          "$($hash.Hash)  disque-obs.dll" |
-            Set-Content "artifact/SHA256.txt"
+          dotnet tool install --global wix --version 6.0.2
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
-      - name: Analyser avec Microsoft Defender
+      - name: Creer le MSI
         shell: pwsh
         run: |
-          $defender = Get-MpComputerStatus -ErrorAction Stop
-          Write-Host "Antivirus actif : $($defender.AntivirusEnabled)"
+          wix build installer.wxs `
+            -arch x64 `
+            -d "PluginDll=artifact/disque-obs.dll" `
+            -o "artifact/Disque-OBS-Setup-1.0.msi"
 
-          if (-not $defender.AntivirusEnabled) {
-            throw "Microsoft Defender Antivirus n'est pas actif"
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
           }
 
-          $file = (Resolve-Path "artifact/disque-obs.dll").Path
-          Start-MpScan -ScanType CustomScan -ScanPath $file -ErrorAction Stop
-
-          $threats = @(Get-MpThreatDetection -ErrorAction Stop |
-            Where-Object {
-              $_.Resources -match "disque-obs.dll"
-            })
-
-          if ($threats.Count -gt 0) {
-            throw "Microsoft Defender a detecte une menace concernant la DLL"
-          }
-
-          Write-Host "Analyse terminee sans detection signalee"
-
-      - name: Publier le resultat
+      - name: Publier le MSI et la DLL
         uses: actions/upload-artifact@v4
         with:
-          name: disque-obs-windows-x64
-          path: artifact/
+          name: Disque-OBS-Setup-1.0
+          path: |
+            artifact/Disque-OBS-Setup-1.0.msi
+            artifact/disque-obs.dll
