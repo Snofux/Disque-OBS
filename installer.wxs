@@ -16,28 +16,20 @@
     <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="OBSFolder" Name="obs-studio">
         <Directory Id="OBSPluginsFolder" Name="obs-plugins">
-          <Directory Id="OBS64Folder" Name="64bit" />
+          <Directory Id="OBS64Folder" Name="64bit">
+            <Component Id="DisqueDLL" Guid="8F0C1D3E-2E2A-4B2B-89C2-1D4F769A21B7">
+              <File
+                Id="DisquePluginFile"
+                Source="artifact/disque-obs.dll"
+                Name="disque-obs.dll"
+                KeyPath="yes" />
+            </Component>
+          </Directory>
         </Directory>
       </Directory>
     </StandardDirectory>
 
-    <Component
-      Id="DisqueDLL"
-      Directory="OBS64Folder"
-      Guid="8F0C1D3E-2E2A-4B2B-89C2-1D4F769A21B7">
-
-      <File
-        Id="DisquePluginFile"
-        Source="disque-obs.dll"
-        Name="disque-obs.dll"
-        KeyPath="yes" />
-
-    </Component>
-
-    <Feature
-      Id="MainFeature"
-      Title="Disque OBS"
-      Level="1">
+    <Feature Id="MainFeature" Title="Disque OBS" Level="1">
       <ComponentRef Id="DisqueDLL" />
     </Feature>
 
