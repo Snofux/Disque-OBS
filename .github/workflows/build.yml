@@ -6,30 +6,73 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
-      - name: Recuperer le projet
+      - name: Recuperer notre projet
         uses: actions/checkout@v4
 
       - name: Installer CMake
         uses: lukka/get-cmake@latest
 
-      - name: Verifier les fichiers
+      - name: Preparer le modele officiel OBS
         shell: pwsh
         run: |
-          Get-ChildItem -Recurse
-          cmake --version
+          git clone --depth 1 https://github.com/obsproject/obs-plugintemplate.git _obs_template
 
-      - name: Verifier les outils Visual Studio
+          if ($LASTEXITCODE -ne 0) {
+            throw "Impossible de recuperer le modele OBS"
+          }
+
+          Copy-Item disque.c _obs_template/src/plugin-main.c -Force
+
+          $specPath = "_obs_template/buildspec.json"
+          $spec = Get-Content $specPath -Raw | ConvertFrom-Json
+
+          $spec.name = "disque-obs"
+          $spec.displayName = "Disque OBS"
+          $spec.version = "0.7.0"
+          $spec.author = "Snofux"
+          $spec.website = "https://github.com/Snofux/Disque-OBS"
+
+          $spec | ConvertTo-Json -Depth 20 |
+            Set-Content -Path $specPath -Encoding utf8
+
+      - name: Configurer la compilation Windows
+        shell: pwsh
+        working-directory: _obs_template
+        run: |
+          cmake --preset windows-x64
+
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Compiler Disque OBS
+        shell: pwsh
+        working-directory: _obs_template
+        run: |
+          cmake --build --preset windows-x64 --config Release --parallel
+
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Recuperer la DLL
         shell: pwsh
         run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (-not (Test-Path $vswhere)) {
-            throw "Visual Studio Installer introuvable"
+          $dll = Get-ChildItem -Path _obs_template/build_x64 -Filter "disque-obs.dll" -Recurse |
+            Select-Object -First 1
+
+          if (-not $dll) {
+            throw "La DLL disque-obs.dll est introuvable"
           }
-          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          if (-not $vs) {
-            throw "Compilateur Visual C++ introuvable"
-          }
-          Write-Host "Visual Studio trouve : $vs"
+
+          New-Item -ItemType Directory -Force -Path artifact | Out-Null
+          Copy-Item $dll.FullName artifact/disque-obs.dll
+
+      - name: Publier le resultat
+        uses: actions/upload-artifact@v4
+        with:
+          name: disque-obs-windows-x64
+          path: artifact/disque-obs.dll
