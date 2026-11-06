@@ -1,0 +1,42 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="Disque OBS"
+    Manufacturer="Snofux"
+    Version="1.0.0"
+    UpgradeCode="E53A4D80-5F76-4C8C-94E1-6D7537F17C90"
+    Scope="perMachine">
+
+    <MajorUpgrade
+      DowngradeErrorMessage="Une version plus recente de Disque OBS est deja installee." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="OBSFolder" Name="obs-studio">
+        <Directory Id="OBSPluginsFolder" Name="obs-plugins">
+          <Directory Id="OBS64Folder" Name="64bit" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <Component
+      Id="DisqueDLL"
+      Directory="OBS64Folder"
+      Guid="8F0C1D3E-2E2A-4B2B-89C2-1D4F769A21B7">
+
+      <File
+        Id="DisquePluginFile"
+        Source="disque-obs.dll"
+        Name="disque-obs.dll"
+        KeyPath="yes" />
+
+    </Component>
+
+    <Feature Id="MainFeature" Title="Disque OBS" Level="1">
+      <ComponentRef Id="DisqueDLL" />
+    </Feature>
+
+  </Package>
+</Wix>
