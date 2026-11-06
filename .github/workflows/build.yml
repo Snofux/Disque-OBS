@@ -1,0 +1,27 @@
+
+name: Compilation Disque OBS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Recuperer le projet
+        uses: actions/checkout@v4
+
+      - name: Installer CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Verifier les fichiers
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse
+          cmake --version
+
+      - name: Verifier le compilateur Windows
+        shell: pwsh
+        run: |
+          where.exe cl
