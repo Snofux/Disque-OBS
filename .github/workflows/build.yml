@@ -21,7 +21,15 @@ jobs:
           Get-ChildItem -Recurse
           cmake --version
 
-      - name: Verifier le compilateur Windows
+      - name: Verifier les outils Visual Studio
         shell: pwsh
         run: |
-          where.exe cl
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) {
+            throw "Visual Studio Installer introuvable"
+          }
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) {
+            throw "Compilateur Visual C++ introuvable"
+          }
+          Write-Host "Visual Studio trouve : $vs"
