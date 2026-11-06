@@ -31,7 +31,7 @@ jobs:
 
           $spec.name = "disque-obs"
           $spec.displayName = "Disque OBS"
-          $spec.version = "0.7.0"
+          $spec.version = "0.8.0"
           $spec.author = "Snofux"
           $spec.website = "https://github.com/Snofux/Disque-OBS"
 
@@ -71,8 +71,41 @@ jobs:
           New-Item -ItemType Directory -Force -Path artifact | Out-Null
           Copy-Item $dll.FullName artifact/disque-obs.dll
 
+      - name: Calculer SHA256
+        shell: pwsh
+        run: |
+          $hash = Get-FileHash "artifact/disque-obs.dll" -Algorithm SHA256
+          Write-Host "SHA256 de disque-obs.dll :"
+          Write-Host $hash.Hash
+          "$($hash.Hash)  disque-obs.dll" |
+            Set-Content "artifact/SHA256.txt"
+
+      - name: Analyser avec Microsoft Defender
+        shell: pwsh
+        run: |
+          $defender = Get-MpComputerStatus -ErrorAction Stop
+          Write-Host "Antivirus actif : $($defender.AntivirusEnabled)"
+
+          if (-not $defender.AntivirusEnabled) {
+            throw "Microsoft Defender Antivirus n'est pas actif"
+          }
+
+          $file = (Resolve-Path "artifact/disque-obs.dll").Path
+          Start-MpScan -ScanType CustomScan -ScanPath $file -ErrorAction Stop
+
+          $threats = @(Get-MpThreatDetection -ErrorAction Stop |
+            Where-Object {
+              $_.Resources -match "disque-obs.dll"
+            })
+
+          if ($threats.Count -gt 0) {
+            throw "Microsoft Defender a detecte une menace concernant la DLL"
+          }
+
+          Write-Host "Analyse terminee sans detection signalee"
+
       - name: Publier le resultat
         uses: actions/upload-artifact@v4
         with:
           name: disque-obs-windows-x64
-          path: artifact/disque-obs.dll
+          path: artifact/
